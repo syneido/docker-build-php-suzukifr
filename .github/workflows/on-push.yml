@@ -12,6 +12,7 @@ jobs:
     env:
       BASE_IMAGE_NAME: php7.1-suzukifr
       PHP_VERSION: 7.1
+      FPM_UID: 1000
     steps:
       - name: Check Out Repo
         uses: actions/checkout@v2
@@ -32,6 +33,7 @@ jobs:
           context: ./
           build-args: |
             PHP_VERSION=${{ env.PHP_VERSION }}
+            FPM_UID=${{ env.FPM_UID }}
           file: ./Dockerfile-fpm
           push: true
           cache-from: type=registry,ref=${{ github.repository_owner }}/prod-${{ env.BASE_IMAGE_NAME }}-fpm:latest
@@ -46,6 +48,7 @@ jobs:
           context: ./
           build-args: |
             PHP_VERSION=${{ env.PHP_VERSION }}
+            FPM_UID=${{ env.FPM_UID }}
           file: ./Dockerfile-fpm
           push: true
           cache-from: type=registry,ref=${{ github.repository_owner }}/dev-${{ env.BASE_IMAGE_NAME }}-fpm:latest
@@ -60,6 +63,7 @@ jobs:
           context: ./
           build-args: |
             PHP_VERSION=${{ env.PHP_VERSION }}
+            FPM_UID=${{ env.FPM_UID }}
           file: ./Dockerfile-build
           push: true
           cache-from: type=registry,ref=${{ github.repository_owner }}/build-${{ env.BASE_IMAGE_NAME }}:latest
@@ -67,3 +71,16 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner }}/build-${{ env.BASE_IMAGE_NAME }}:latest
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
+
+  Clean:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove old packages
+        uses: snok/container-retention-policy@v1
+        with:
+          image-names: ${{ github.repository_owner }}/prod-${{ env.BASE_IMAGE_NAME }}-fpm, ${{ github.repository_owner }}/dev-${{ env.BASE_IMAGE_NAME }}-fpm,${{ github.repository_owner }}/build-${{ env.BASE_IMAGE_NAME }}
+          cut-off: One hour ago UTC
+          keep-at-least: 3
+          account-type: personal
+          token: ${{ secrets.PACKAGE_TOKEN }}
