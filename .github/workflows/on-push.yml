@@ -10,8 +10,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      BASE_IMAGE_NAME: php7.1-suzukifr
-      PHP_VERSION: 7.1
+      BASE_IMAGE_NAME: php-suzukifr
+      PHP_VERSION: 7.4
       FPM_UID: 1000
     steps:
       - name: Check Out Repo
