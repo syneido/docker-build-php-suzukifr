@@ -1,0 +1,29 @@
+ARG PHP_VERSION
+
+FROM php:${PHP_VERSION}-cli-alpine
+COPY configure.sh /
+COPY php.ini /usr/local/etc/php/conf.d
+
+ENV COMPOSER_DIR=/.composer \
+    SYMFONY_DIR=/.symfony \
+    TOOLS_DIR=/tools/
+
+RUN HOME=/ \
+    && /configure.sh \
+    && rm /configure.sh \
+    && mkdir $COMPOSER_DIR $SYMFONY_DIR $TOOLS_DIR \
+    && apk add --no-cache $PHPIZE_DEPS \
+    && pecl install xdebug \
+    && docker-php-ext-enable xdebug \
+    && apk del $PHPIZE_DEPS \
+    && rm -r /tmp/pear/cache/* /tmp/pear/download/* \
+    # Composer
+    && curl --silent --fail-early https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+    # Symfony binary
+    # QA - @see Globally https://twitter.com/s_bergmann/status/999635212723212288
+    && mkdir --parents /tools/php-cs-fixer && composer require --working-dir=/tools/php-cs-fixer friendsofphp/php-cs-fixer \
+    && chmod -R o+rwx $COMPOSER_DIR $SYMFONY_DIR $TOOLS_DIR
+
+WORKDIR /app
+
+
